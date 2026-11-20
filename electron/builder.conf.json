@@ -1,0 +1,32 @@
+{
+  "appId": "com.douyuhub.app",
+  "productName": "DouyuHub",
+  "directories": { "output": "release" },
+  "files": [
+    "electron/main.cjs",
+    "client/dist/**/*",
+    "server/**/*",
+    "!server/node_modules/**/*",
+    "package.json"
+  ],
+  "extraMetadata": { "main": "electron/main.cjs" },
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ],
+    "icon": "client/public/icon.ico"
+  },
+  "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "DouyuHub" },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.entertainment",
+    "icon": "client/public/icon-512.png"
+  },
+  "linux": { "target": ["AppImage"], "category": "Network", "icon": "client/public/icon-512.png" },
+  "icons": {
+    "win": "client/public/icon.ico",
+    "mac": "client/public/icon-512.png",
+    "linux": "client/public/icon-512.png"
+  }
+}
