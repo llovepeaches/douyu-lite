@@ -1,0 +1,24 @@
+{
+  "name": "douyu-live-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "基于斗鱼公开数据的第三方跨平台直播聚合应用",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run start",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server run start",
+    "electron:dev": "npm run build && electron electron/main.cjs",
+    "electron:build": "npm run build && electron-builder --config electron/builder.conf.json",
+    "electron:build:win": "npm run build && electron-builder --win --config electron/builder.conf.json",
+    "electron:build:mac": "npm run build && electron-builder --mac --config electron/builder.conf.json",
+    "electron:build:linux": "npm run build && electron-builder --linux --config electron/builder.conf.json"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
