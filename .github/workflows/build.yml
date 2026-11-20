@@ -1,0 +1,220 @@
+name: 构建 DouyuHub 全平台安装包
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '选择构建目标'
+        required: false
+        default: 'all'
+        type: choice
+        options: [all, web, windows, macos, android, ios]
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ============ Web / PWA ============
+  web:
+    name: Web / PWA
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - name: 安装依赖
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix client ci --no-audit --no-fund
+      - name: 构建前端
+        run: npm run build
+      - name: 打包 Web 产物
+        run: cd client/dist && zip -r ../../douyuhub-web-pwa.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-pwa
+          path: douyuhub-web-pwa.zip
+          if-no-files-found: error
+
+  # ============ Windows (Electron) ============
+  windows:
+    name: Windows (exe)
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - name: 安装依赖
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix client ci --no-audit --no-fund
+          npm install --no-save electron electron-builder
+      - name: 构建 Windows 安装包
+        run: npm run electron:build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: |
+            release/*.exe
+            release/*.zip
+          if-no-files-found: error
+
+  # ============ macOS (Electron) ============
+  macos:
+    name: macOS (dmg)
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - name: 安装依赖
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix client ci --no-audit --no-fund
+          npm install --no-save electron electron-builder
+      - name: 构建 macOS 安装包
+        run: npm run electron:build:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: |
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: error
+
+  # ============ Android (Capacitor) ============
+  android:
+    name: Android (APK)
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'android'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: 安装依赖
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix client ci --no-audit --no-fund
+          npm --prefix mobile ci --no-audit --no-fund
+      - name: 构建前端
+        run: npm run build
+      - name: 生成 Android 工程
+        run: |
+          cd mobile
+          npx cap add android
+      - name: 注入 API 服务地址（如已配置）
+        if: vars.API_BASE_URL != ''
+        run: |
+          cd mobile
+          node -e "const fs=require('fs');const p='capacitor.config.json';const c=JSON.parse(fs.readFileSync(p));c.server={...(c.server||{}),url:'${{ vars.API_BASE_URL }}',cleartext:true};fs.writeFileSync(p,JSON.stringify(c,null,2))"
+      - name: 同步 Capacitor
+        run: npm --prefix mobile run sync
+      - name: 构建调试 APK
+        run: |
+          cd mobile/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  # ============ iOS (Capacitor, 模拟器包) ============
+  ios:
+    name: iOS (模拟器 App)
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'ios'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - name: 安装依赖
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix client ci --no-audit --no-fund
+          npm --prefix mobile ci --no-audit --no-fund
+      - name: 构建前端
+        run: npm run build
+      - name: 生成 iOS 工程
+        run: |
+          cd mobile
+          npx cap add ios
+      - name: 注入 API 服务地址（如已配置）
+        if: vars.API_BASE_URL != ''
+        run: |
+          cd mobile
+          node -e "const fs=require('fs');const p='capacitor.config.json';const c=JSON.parse(fs.readFileSync(p));c.server={...(c.server||{}),url:'${{ vars.API_BASE_URL }}',cleartext:true};fs.writeFileSync(p,JSON.stringify(c,null,2))"
+      - name: 同步 Capacitor
+        run: npm --prefix mobile run sync
+      - name: 构建模拟器 App（无需签名）
+        run: |
+          cd mobile/ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -sdk iphonesimulator -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+          cd build/Build/Products/Release-iphonesimulator
+          zip -r ../../../../douyuhub-ios-simulator.zip App.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator
+          path: '**/douyuhub-ios-simulator.zip'
+          if-no-files-found: error
+
+  # ============ 发布 Release（仅 tag 触发）============
+  release:
+    name: 发布 GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [web, windows, macos, android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: 列出构建产物
+        run: find artifacts -type f -exec ls -lh {} \;
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          draft: false
