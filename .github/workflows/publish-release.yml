@@ -1,0 +1,97 @@
+name: 发布安装包到 Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: '要发布的构建 run ID（留空则使用最近一次成功构建）'
+        required: false
+        type: string
+      tag:
+        description: 'Release 标签, 如 v1.0.0'
+        required: false
+        default: 'v1.0.0'
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: 发布 Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 确定要发布的构建 run
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_RUN: ${{ inputs.run_id }}
+        run: |
+          if [ -n "$INPUT_RUN" ]; then
+            echo "run_id=$INPUT_RUN" >> $GITHUB_OUTPUT
+          else
+            RUN=$(gh api repos/${{ github.repository }}/actions/runs?status=success\&per_page=1 --jq '.workflow_runs[0].id')
+            echo "run_id=$RUN" >> $GITHUB_OUTPUT
+          fi
+          echo "将发布 run: $(cat $GITHUB_OUTPUT)"
+
+      - name: 下载该 run 的全部构建产物
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ steps.resolve.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: artifacts
+
+      - name: 整理产物
+        run: |
+          echo "下载到的文件:"
+          find artifacts -type f -exec ls -lh {} \;
+          mkdir -p release-files
+          # 把 artifact 里的文件展平到 release-files 目录，并重命名便于识别
+          for d in artifacts/*/; do
+            name=$(basename "$d")
+            case "$name" in
+              web-pwa*) new="douyuhub-web-pwa.zip" ;;
+              windows-exe*) new="douyuhub-windows-exe.zip" ;;
+              macos-dmg*) new="douyuhub-macos-dmg.zip" ;;
+              android-apk*) new="douyuhub-android-apk.zip" ;;
+              ios-simulator*) new="douyuhub-ios-simulator.zip" ;;
+              *) new="$name.zip" ;;
+            esac
+            if [ -f "$d$new" ]; then
+              cp "$d$new" "release-files/$new"
+            else
+              # artifact 内是嵌套 zip 时, 取第一个文件并规范命名
+              f=$(find "$d" -type f | head -1)
+              [ -n "$f" ] && cp "$f" "release-files/$new"
+            fi
+          done
+          echo "整理后的文件:"
+          ls -lh release-files/
+
+      - name: 创建 Release 并上传安装包
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: DouyuHub ${{ inputs.tag }} · 全平台安装包
+          body: |
+            ## DouyuHub ${{ inputs.tag }}
+
+            基于斗鱼公开数据的第三方跨平台直播聚合应用，由 GitHub Actions 自动构建。
+
+            ### 下载
+
+            | 平台 | 文件 | 说明 |
+            |---|---|---|
+            | Windows | `douyuhub-windows-exe.zip` | 解压后含 NSIS 安装版 + 便携版 exe |
+            | macOS | `douyuhub-macos-dmg.zip` | 解压后含 dmg + zip |
+            | Android | `douyuhub-android-apk.zip` | 解压后为 app-debug.apk |
+            | iOS | `douyuhub-ios-simulator.zip` | 模拟器包，需 Xcode 运行 |
+            | Web / PWA | `douyuhub-web-pwa.zip` | 静态站点，可部署或浏览器安装 |
+
+            > 安装包由 Actions 产物直接发布。iOS 为模拟器版（未签名），真机需自行签名。
+          files: release-files/*
+          generate_release_notes: false
