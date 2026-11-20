@@ -1,0 +1,13 @@
+{
+  "appId": "com.douyuhub.app",
+  "appName": "DouyuHub",
+  "webDir": "../client/dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 1200, "backgroundColor": "#0a0d16" }
+  }
+}
