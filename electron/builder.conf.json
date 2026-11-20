@@ -23,10 +23,5 @@
     "category": "public.app-category.entertainment",
     "icon": "client/public/icon-512.png"
   },
-  "linux": { "target": ["AppImage"], "category": "Network", "icon": "client/public/icon-512.png" },
-  "icons": {
-    "win": "client/public/icon.ico",
-    "mac": "client/public/icon-512.png",
-    "linux": "client/public/icon-512.png"
-  }
+  "linux": { "target": ["AppImage"], "category": "Network", "icon": "client/public/icon-512.png" }
 }
