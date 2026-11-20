@@ -1,0 +1,32 @@
+# 依赖
+node_modules/
+!.gitkeep
+
+# 构建产物
+client/dist/
+release/
+*.apk
+*.ipa
+*.dmg
+*.exe
+*.AppImage
+douyuhub-*.zip
+
+# 原生工程（由 CI 或 cap add 生成）
+mobile/android/
+mobile/ios/
+mobile/www/
+
+# 日志与缓存
+*.log
+npm-debug.log*
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+client/vite.config.js
+client/vite.config.d.ts
+
+# IDE
+.vscode/
+.idea/
