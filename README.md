@@ -96,6 +96,12 @@ npm run add:ios        # 生成 ios/ 工程（需 macOS + Xcode）
 | Android | Ubuntu | Capacitor 生成的调试版 `.apk` |
 | iOS | macOS | 模拟器版 `.app`（无需签名，用于 Xcode 模拟器测试） |
 
+### 本次实测结果（2026-11-20）
+
+代码已推送到 `llovepeaches/douyu-lite`，run #3（[44716263545](https://github.com/llovepeaches/douyu-lite/actions/runs/44716263545)）**五个平台全部构建成功**，产物大小：macOS 约 228 MB、Windows 约 223 MB、Android APK 约 4 MB、iOS 模拟器包约 1.7 MB、Web 约 0.6 MB。
+
+> 修复过程中踩过的三个 CI 坑，已全部解决：① electron-builder 新版废弃了顶层 `icons` 属性；② `android-actions/setup-android` 安装废弃的 `tools` 包会失败（已移除，runner 自带 SDK）；③ electron-builder 在 CI 中会尝试隐式发布，需加 `--publish never`。
+
 ### 配置 API 服务地址（移动端）
 
 Android/iOS 应用的 WebView 需要访问后端 API。在 GitHub 仓库 → Settings → Secrets and variables → Actions → Variables 中添加变量：
