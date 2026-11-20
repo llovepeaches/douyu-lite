@@ -96,6 +96,20 @@ npm run add:ios        # 生成 ios/ 工程（需 macOS + Xcode）
 | Android | Ubuntu | Capacitor 生成的调试版 `.apk` |
 | iOS | macOS | 模拟器版 `.app`（无需签名，用于 Xcode 模拟器测试） |
 
+### 下载安装包（已发布）
+
+正式安装包已发布到 [Releases 页面](https://github.com/llovepeaches/douyu-lite/releases/tag/v1.0.0)，打开即可直接下载，无需登录 GitHub Actions：
+
+| 平台 | 文件 | 大小 |
+|---|---|---|
+| Windows | `douyuhub-windows-exe.zip` | 116 MB |
+| macOS | `douyuhub-macos-dmg.zip` | 112 MB |
+| Android | `douyuhub-android-apk.zip` | 4 MB |
+| iOS | `douyuhub-ios-simulator.zip` | 1.7 MB |
+| Web / PWA | `douyuhub-web-pwa.zip` | 0.6 MB |
+
+如需重新发布，到 Actions 运行「发布安装包到 Release」，可指定构建 run ID 和版本号。
+
 ### 本次实测结果（2026-11-20）
 
 代码已推送到 `llovepeaches/douyu-lite`，run #3（[44716263545](https://github.com/llovepeaches/douyu-lite/actions/runs/44716263545)）**五个平台全部构建成功**，产物大小：macOS 约 228 MB、Windows 约 223 MB、Android APK 约 4 MB、iOS 模拟器包约 1.7 MB、Web 约 0.6 MB。
